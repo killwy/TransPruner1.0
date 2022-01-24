@@ -9,27 +9,29 @@ from deepPruner.deeppruner import deepPruner
 from torch.autograd import Variable
 from deepPruner.config import config
 import torch.nn.functional as F
-import time
 from visdom import Visdom
-
+import logging
+# 设置logging格式
+Log_Format='%(asctime)s - %(levelname)s - %(message)s'
+logging.basicConfig(filename='Transpruner1.1_pretrain.log',level=logging.INFO,format=Log_Format)
 # 设置visdom窗口
-wind1 = Visdom()
-wind1.line([0.],  # Y的第一个点的坐标
+window = Visdom()
+window.line([0.],  # Y的第一个点的坐标
            [0.],  # X的第一个点的坐标
            win='train_loss', # 窗口的名称
            opts=dict(title='training_loss')  # 图像的标例
            )
-wind1.line([0.],  # Y的第一个点的坐标
+window.line([0.],  # Y的第一个点的坐标
            [0.],  # X的第一个点的坐标
            win='valid_loss',  # 窗口的名称
            opts=dict(title='valid_loss')  # 图像的标例
            )
-wind1.line([0.],  # Y的第一个点的坐标
+window.line([0.],  # Y的第一个点的坐标
            [0.],  # X的第一个点的坐标
            win='valid_epe_loss',  # 窗口的名称
            opts=dict(title='valid_epe_loss')  # 图像的标例
            )
-wind1.line([0.],  # Y的第一个点的坐标
+window.line([0.],  # Y的第一个点的坐标
            [0.],  # X的第一个点的坐标
            win='in_epoch_loss',  # 窗口的名称
            opts=dict(title='in_epoch_loss')  # 图像的标例
@@ -46,13 +48,13 @@ torch.backends.cudnn.deterministic = True
 # dataloader
 train_loader=SceneflowDataLoader(file_path='/home/jiaxi/workspace/deepPruner/preprocess/Sceneflow_train.csv',train=True)
 valid_loader=SceneflowDataLoader(file_path='/home/jiaxi/workspace/deepPruner/preprocess/Sceneflow_valid.csv',train=False)
-trainImgLoader=DataLoader(train_loader,batch_size=16,shuffle=True,num_workers=28,drop_last=False)
-testImgLoader=DataLoader(valid_loader,batch_size=20,shuffle=False,num_workers=28,drop_last=False)
+trainImgLoader=DataLoader(train_loader,batch_size=9,shuffle=True,num_workers=28,drop_last=False)
+testImgLoader=DataLoader(valid_loader,batch_size=10,shuffle=False,num_workers=28,drop_last=False)
 
 # 初始化模型,并行化模型
 model = deepPruner()
-device_ids = [0,1]
-model=torch.nn.DataParallel(model,device_ids=device_ids)
+device_ids = [1]
+# model=torch.nn.DataParallel(model,device_ids=device_ids)
 model = model.cuda(device=device_ids[0])  # 模型放在主设备
 # print(summary(model,[(3,256,512),(3,256,512)],batch_size=1))
 
@@ -62,35 +64,35 @@ optimizer = optim.Adam(model.parameters(), lr=0.001, betas=(0.9, 0.999))
 # loss function
 def loss_evaluation(gt,pred,mask):
     # Loss_min_disp
-    # mask=mask.int()
-    # print(mask)
-    # print(type(mask))
-    # print(mask)
-    # print(pred[2])
-    newmask1=((gt[mask]-pred[2][mask])<0).float()
-    Loss_min_disp=(gt[mask]-pred[2][mask])*(0.05-newmask1)
+    newmask1=((gt[mask]-pred[4][mask])<0).float()
+    Loss_min_disp=(gt[mask]-pred[4][mask])*(0.05-newmask1)
     Loss_min_disp=Loss_min_disp.mean()
-    Loss_min_disp2=F.smooth_l1_loss(pred[2][mask],gt[mask],size_average=True)
+    Loss_min_disp2=F.smooth_l1_loss(pred[4][mask],gt[mask],size_average=True)
     # Loss_max_disp
-    newmask2=((gt[mask]-pred[3][mask])<0).float()
-    Loss_max_disp=(gt[mask]-pred[3][mask])*(0.95-newmask2)
+    newmask2=((gt[mask]-pred[5][mask])<0).float()
+    Loss_max_disp=(gt[mask]-pred[5][mask])*(0.95-newmask2)
     Loss_max_disp=Loss_max_disp.mean()
-    Loss_max_disp2=F.smooth_l1_loss(pred[3][mask],gt[mask],size_average=True)
+    Loss_max_disp2=F.smooth_l1_loss(pred[5][mask],gt[mask],size_average=True)
     # Loss_aggregated
-    Loss_aggregated=F.smooth_l1_loss(pred[1][mask],gt[mask],size_average=True)
-    # Loss_refine
-    Loss_refine=F.smooth_l1_loss(pred[0][mask],gt[mask],size_average=True)
+    Loss_aggregated=F.smooth_l1_loss(pred[3][mask],gt[mask],size_average=True)
+    # Loss_refine3
+    Loss_refine3=F.smooth_l1_loss(pred[0][mask],gt[mask],size_average=True)
+    # Loss_refine2
+    Loss_refine2=F.smooth_l1_loss(pred[1][mask],gt[mask],size_average=True)
+    # Loss_refine1
+    Loss_refine1=F.smooth_l1_loss(pred[2][mask],gt[mask],size_average=True)
     loss=0
-    loss+=Loss_refine*1.6+Loss_aggregated+(Loss_min_disp+Loss_max_disp)+(Loss_min_disp2+Loss_max_disp2)*0.7
-    # logging.info("============== evaluated losses ==================")
-    # logging.info('refined_depth_loss: %.6f' % Loss_refine)
-    # logging.info('ca_depth_loss: %.6f' % Loss_aggregated)
-    # logging.info('quantile_loss_max_disparity: %.6f' % Loss_max_disp)
-    # logging.info('quantile_loss_min_disparity: %.6f' % Loss_min_disp)
-    # logging.info('max_disparity_loss: %.6f' % Loss_max_disp2)
-    # logging.info('min_disparity_loss: %.6f' % Loss_min_disp2)
-    # logging.info("==================================================\n")
-
+    loss+=Loss_refine3*1.6+Loss_refine2+Loss_refine1+Loss_aggregated+(Loss_min_disp+Loss_max_disp)+(Loss_min_disp2+Loss_max_disp2)*0.7
+    logging.info("============== evaluated losses ==================")
+    logging.info('refined3_depth_loss: %.6f' % Loss_refine3)
+    logging.info('refined2_depth_loss: %.6f' % Loss_refine2)
+    logging.info('refined1_depth_loss: %.6f' % Loss_refine1)
+    logging.info('ca_depth_loss: %.6f' % Loss_aggregated)
+    logging.info('quantile_loss_max_disparity: %.6f' % Loss_max_disp)
+    logging.info('quantile_loss_min_disparity: %.6f' % Loss_min_disp)
+    logging.info('max_disparity_loss: %.6f' % Loss_max_disp2)
+    logging.info('min_disparity_loss: %.6f' % Loss_min_disp2)
+    logging.info("==================================================\n")
     return loss
 
 # 3-pixel error function
@@ -124,7 +126,7 @@ def train(imgL, imgR, disp_L):
     imgL = Variable(torch.FloatTensor(imgL))
     imgR = Variable(torch.FloatTensor(imgR))
     disp_L = Variable(torch.FloatTensor(disp_L))
-    imgL, imgR, disp_true = imgL.cuda(0), imgR.cuda(0), disp_L.cuda(0)
+    imgL, imgR, disp_true = imgL.cuda(1), imgR.cuda(1), disp_L.cuda(1)
     mask = disp_true < config.max_disp
     mask.detach_()
     optimizer.zero_grad()
@@ -140,7 +142,7 @@ def test(imgL, imgR, disp_L):
         imgL = Variable(torch.FloatTensor(imgL))
         imgR = Variable(torch.FloatTensor(imgR))
         disp_L = Variable(torch.FloatTensor(disp_L))
-        imgL, imgR, disp_true = imgL.cuda(), imgR.cuda(), disp_L.cuda()
+        imgL, imgR, disp_true = imgL.cuda(1), imgR.cuda(1), disp_L.cuda(1)
         mask = disp_true < config.max_disp
         mask.detach_()
         if len(disp_true[mask]) == 0:
@@ -161,41 +163,41 @@ def main():
         adjust_learning_rate(optimizer, epoch)
 
         # TRAIN
+        logging.info("Epoch %d training start..."% (epoch))
         for batch_idx, (imgL_crop, imgR_crop, disp_crop_L) in enumerate(trainImgLoader):
-            start_time = time.time()
+            # start_time = time.time()
             loss = train(imgL_crop, imgR_crop, disp_crop_L)
             total_train_loss += loss
             if batch_idx==0:
-                wind1.line([loss],[batch_idx],win='in_epoch_loss')
+                window.line([loss],[batch_idx],win='in_epoch_loss')
             else:
-                wind1.line([loss],[batch_idx],win='in_epoch_loss',update='append')
-            print('Iter %d training loss = %.3f , time = %.2f \n' % (batch_idx, loss, time.time() - start_time))
-        wind1.line([total_train_loss/len(trainImgLoader)],[epoch],win='train_loss',update='append')
-        print('epoch %d total training loss = %.3f' % (epoch, total_train_loss / len(trainImgLoader)))
+                window.line([loss],[batch_idx],win='in_epoch_loss',update='append')
+            logging.info('Epoch %d Iter %d training loss = %.3f' % (epoch,batch_idx, loss))
+        window.line([total_train_loss/len(trainImgLoader)],[epoch],win='train_loss',update='append')
+        logging.info('Epoch %d average training loss = %.3f' % (epoch, total_train_loss / len(trainImgLoader)))
 
         # TEST
-        if epoch % 1 == 0 :
-            print("testing...")
-            for batch_idx, (imgL, imgR, disp_L) in enumerate(testImgLoader):
-                start_time = time.time()
-                test_loss,epe_loss= test(imgL, imgR, disp_L)
-                total_test_loss += test_loss
-                total_epe_loss+=epe_loss
-                print('Iter %d 3-px error in val = %.3f, time = %.2f \n' %
-                      (batch_idx, test_loss, time.time() - start_time))
-            wind1.line([total_epe_loss/len(testImgLoader)],[epoch],win='valid_epe_loss',update='append')
-            wind1.line([total_test_loss/len(testImgLoader)],[epoch],win='valid_loss',update='append')
-            print('epoch %d total test loss = %.3f' % (epoch, total_test_loss / len(testImgLoader)))
+        logging.info("Epoch %d testing start..."% (epoch))
+        for batch_idx, (imgL, imgR, disp_L) in enumerate(testImgLoader):
+            test_loss,epe_loss= test(imgL, imgR, disp_L)
+            total_test_loss += test_loss
+            total_epe_loss+=epe_loss
+            logging.info('Epoch %d Iter %d test_loss= %.3f epe = %.3f' %(epoch,batch_idx,test_loss,epe_loss))
+        average_epe=total_epe_loss/len(testImgLoader)
+        average_test_loss=total_test_loss/len(testImgLoader)
+        window.line([average_epe],[epoch],win='valid_epe_loss',update='append')
+        window.line([average_test_loss],[epoch],win='valid_loss',update='append')
+        logging.info('Epoch %d average test loss = %.3f average epe = %.3f' % (epoch, average_test_loss,average_epe))
 
         # SAVE
-        if epoch % 1 == 0:
-            savefilename = '/home/jiaxi/workspace/TransPruner/pretrain_models/deepPruner_raw_pretrain_' + str(epoch) + '.tar'
-            torch.save({
-                'epoch': epoch,
-                'state_dict': model.state_dict(),
-                'train_loss': total_train_loss,
-                'test_loss': total_test_loss,
-            }, savefilename)
+        savefilename = '/home/jiaxi/workspace/TransPruner/pretrain_models/deepPruner_raw_pretrain_' + str(epoch) + '.tar'
+        torch.save({
+            'epoch': epoch,
+            'state_dict': model.state_dict(),
+            'train_loss': total_train_loss,
+            'test_loss': total_test_loss,
+        }, savefilename)
+        logging.info("Epoch %d the model has been saved."% (epoch))
 
 
 if __name__ == '__main__':

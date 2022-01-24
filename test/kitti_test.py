@@ -72,6 +72,9 @@ import torch.nn
 from deepPruner.config import config
 from preprocess.dataLoader import ImageDataSet
 import matplotlib.pyplot as plt
+import logging
+Log_Format='%(asctime)s - %(levelname)s - %(message)s'
+logging.basicConfig(filename='Transpruner1.1_pretrain.log',level=logging.INFO,format=Log_Format)
 
 seed=1
 torch.manual_seed(seed)
@@ -90,7 +93,7 @@ model.load_state_dict(torch.load('/home/jiaxi/workspace/TransPruner/kitti_models
 # dataloader=DataLoader(dataloader,batch_size=20,shuffle=False,num_workers=20)
 # 测试kitti
 dataloader=ImageDataSet('/home/jiaxi/workspace/deepPruner/valid.csv',False)
-dataloader=torch.utils.data.DataLoader(dataloader,batch_size=1,shuffle=False,num_workers=4,drop_last=False)
+dataloader=torch.utils.data.DataLoader(dataloader,batch_size=24,shuffle=False,num_workers=28,drop_last=False)
 
 def validation_error_evaluate(gt,pred,mask):
     dif=torch.abs(gt[mask]-pred[mask])
@@ -155,8 +158,6 @@ def test(imgL,imgR,disp_L,batch_idx,l_path,r_path):
 def main():
     total_error_rate=0
     for batch_idx,(left,right,disp,l_path,r_path) in enumerate(dataloader):
-        if batch_idx!=19:
-            continue
         print("batch_idx %d :"%(batch_idx))
         error_rate,loss=test(left,right,disp,batch_idx,l_path[0],r_path[0])
         total_error_rate+=error_rate

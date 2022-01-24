@@ -56,13 +56,11 @@ class SceneflowDataLoader(data.Dataset):
         right=preprocess.process()(right.transpose([1,2,0]))
         disp=disp.unsqueeze(0)
         # 训练时
-
-        # return left,right,disp
+        return left,right,disp
         # 测试可视化时
-        left_img=numpy.array(left_img)
-        right_img=numpy.array(right_img)
-        return left,right,disp,left_img,right_img
-
+        # left_img=numpy.array(left_img)
+        # right_img=numpy.array(right_img)
+        # return left,right,disp,left_img,right_img
 
     def __len__(self):
         return self.files.__len__()

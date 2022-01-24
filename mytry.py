@@ -158,16 +158,20 @@
 # t=patches2features(t)
 # print(t)
 # print(t.shape)
-import torch
-coords_h = torch.arange(4)
-coords_w = torch.arange(4)
-coords=torch.meshgrid([coords_h, coords_w])
-print(coords)
-coords = torch.stack(coords)
-print(coords)
-flaten_coords=torch.flatten(coords,start_dim=1)
-print(flaten_coords)
-coords=flaten_coords[:,:,None]-flaten_coords[:,None,:]
-coords=coords.permute(1,2,0)
-print(coords.shape)
-print()
+# import torch
+# coords_h = torch.arange(4)
+# coords_w = torch.arange(4)
+# coords=torch.meshgrid([coords_h, coords_w])
+# print(coords)
+# coords = torch.stack(coords)
+# print(coords)
+# flaten_coords=torch.flatten(coords,start_dim=1)
+# print(flaten_coords)
+# coords=flaten_coords[:,:,None]-flaten_coords[:,None,:]
+# coords=coords.permute(1,2,0)
+# print(coords.shape)
+# print()
+import logging
+Log_Format='%(asctime)s - %(levelname)s - %(message)s'
+logging.basicConfig(filename='pretrain.log',level=logging.DEBUG,format=Log_Format)
+logging.info('hey!')

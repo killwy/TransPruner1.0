@@ -46,8 +46,8 @@ config = {
     "patchsize":4,
     "transformer_layer_num":5,
     "trans_vec_dim":64,
-    "defualt_h":256,
-    "defualt_w":512
+    "defualt_h":256,  # 64/4=16/8=2
+    "defualt_w":512   # 128/4=32/8=4
 }
 
 config=resolve(config)

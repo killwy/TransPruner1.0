@@ -1,9 +1,6 @@
-import torch
 from deepPruner.transformer.selfAttention import *
-from deepPruner.config import config
 from timm.models.layers import trunc_normal_
 import torch.nn as nn
-import numpy as np
 class patchMerging(nn.Module):
     def __init__(self,patch_size,vec_dim):
         super(patchMerging, self).__init__()
@@ -354,6 +351,7 @@ class swinTransformer(nn.Module):
         # reduce the map size:
         out=rearrange(out,'n (c ps1 ps2) (h w) -> n c (h ps1) (w ps2)',ps1=self.patch_size,ps2=self.patch_size,h=self.h//(self.patch_size*self.scale))
         return out
+
 
 if __name__=="__main__":
     module_num_list=[4]

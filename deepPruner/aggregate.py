@@ -60,4 +60,4 @@ class aggregate(BottleNeck):
         confidence_output = self.softmax(out0)
         disparity_output = torch.sum(confidence_output * (self.samples.squeeze(1)), dim=1)
 
-        return disparity_output.unsqueeze(1), feature_output
+        return disparity_output.unsqueeze(1), feature_output  # 置信度特征

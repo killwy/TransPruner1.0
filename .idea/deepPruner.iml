@@ -4,7 +4,7 @@
     <content url="file://$MODULE_DIR$">
       <excludeFolder url="file://$MODULE_DIR$/venv" />
     </content>
-    <orderEntry type="jdk" jdkName="Remote Python 3.8.12 (sftp://jiaxi@3e15d0f5291c6d58.natapp.cc:3009/home/jiaxi/.conda/envs/zjx/bin/python)" jdkType="Python SDK" />
+    <orderEntry type="jdk" jdkName="Remote Python 3.7.1 (sftp://jiaxi@141e5173806d6625.natapp.cc:3010/home/jiaxi/miniconda3/envs/zjx/bin/python)" jdkType="Python SDK" />
     <orderEntry type="sourceFolder" forTests="false" />
   </component>
   <component name="TestRunnerService">

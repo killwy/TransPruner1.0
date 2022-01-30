@@ -7,7 +7,6 @@ import numpy as np
 import pandas
 from preprocess import preprocess
 from deepPruner.config import config
-import imageio
 from PIL import Image
 import preprocess.pfm as pfm
 DEFUALT_W=config.defualt_w
@@ -43,11 +42,13 @@ class SceneflowDataLoader(data.Dataset):
         else:
             scale=config.cost_aggregator_scale*8
             h,w=left.shape[1:3]
-            h=(h//scale)*scale
-            w=(w//scale)*scale
-            left=left[:,0:h,0:w]
-            right=right[:,0:h,0:w]
-            disp=disp[0:h,0:w]
+            ch=(h//scale)*scale
+            cw=(w//scale)*scale
+            dh=h-ch
+            dw=w-cw+64
+            left=left[:,dh:,dw:]
+            right=right[:,dh:,dw:]
+            disp=disp[dh:,dw:]
         # left=torch.tensor(left)
         # right=torch.tensor(right)
         disp=torch.tensor(disp)
@@ -56,6 +57,7 @@ class SceneflowDataLoader(data.Dataset):
         right=preprocess.process()(right.transpose([1,2,0]))
         disp=disp.unsqueeze(0)
         # 训练时
+
         return left,right,disp
         # 测试可视化时
         # left_img=numpy.array(left_img)

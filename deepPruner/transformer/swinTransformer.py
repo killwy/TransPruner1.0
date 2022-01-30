@@ -343,7 +343,7 @@ class swinTransformer(nn.Module):
         patches=self.features2patches(inputs)
         out=patches
         for stage,module in enumerate(self.stage_module_list):
-            for i in range(self.module_num_list[stage]):
+            for i in range(self.module_num_list[stage]+1):
                 out=self.stage_module_list[stage][i](out,self.h,self.w)
         # keep the map size:
         # out=rearrange(out,'n (c ps1 ps2) (h w) -> n c (h ps1) (w ps2)',ps1=self.patch_size*self.scale,

@@ -174,4 +174,7 @@
 import logging
 Log_Format='%(asctime)s - %(levelname)s - %(message)s'
 logging.basicConfig(filename='pretrain.log',level=logging.DEBUG,format=Log_Format)
-logging.info('hey!')
+logger=logging.getLogger("pretrain")
+logger.info('hey!')
+# logger.basicConfig(filename='p.log',level=logger.DEBUG,format=Log_Format)
+logger.info('hey!')

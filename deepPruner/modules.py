@@ -176,9 +176,8 @@ class featureExtractor(nn.Module):
     def __init__(self):
         super(featureExtractor,self).__init__()
         # downsample->1/2
-        self.conv0=conv_bn_relu(3,16,3,1,1,1)
         self.conv1=nn.Sequential(
-            conv_bn_relu(16,32,3,2,1,1),  # 3
+            conv_bn_relu(3,32,3,2,1,1),  # 3
             conv_bn_relu(32,32,3,1,1,1),  # 7
             conv_bn_relu(32,32,3,1,1,1)  # 11
         )
@@ -200,8 +199,7 @@ class featureExtractor(nn.Module):
         self.lastLayer=nn.Sequential(conv_bn_relu(320,128,3,1,1,1),nn.Conv2d(128,32,1,1,0,bias=False))
 
     def forward(self,input):
-        features_0=self.conv0(input)
-        features_=self.conv1(features_0)
+        features_=self.conv1(input)
         features0=self.resLayer1(features_)
         features1=self.resLayer2(features0)  # 87
         features=self.resLayer3(features1)
@@ -219,7 +217,7 @@ class featureExtractor(nn.Module):
         features=self.lastLayer(lastinput)
         # 所以大概率不是感受野的问题，而是感受野强度的问题。CNN太过将每个像素点一视同仁了，导致可能对一些不知道
         # features=features0=[B,C=32,H,W]
-        return features,features0,features_0  # 返回1/4大小的spp与1/2大小的low-level feature,与原始大小的
+        return features  # 返回1/4大小的spp与1/2大小的low-level feature,与原始大小的
 
     def resLayers(self, outchannels, ker, stride, pad, dilation, block_num):
         layers = []

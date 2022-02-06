@@ -3,6 +3,7 @@ import torch.nn
 import os
 import numpy as np
 from PIL import Image
+from matplotlib import colors as mcolors
 # __imagenet_stats = {'mean': [0.485, 0.456, 0.406],
 #                     'std': [0.229, 0.224, 0.225]}
 # print(*__imagenet_stats)
@@ -62,6 +63,15 @@ import torch.nn
 from deepPruner.config import config
 from preprocess.dataLoader import ImageDataSet
 import matplotlib.pyplot as plt
+import random
+
+seed = 1
+torch.manual_seed(seed)
+np.random.seed(seed)
+random.seed(seed)
+torch.cuda.manual_seed(seed)
+torch.backends.cudnn.deterministic = True
+
 model=deepPruner()
 device_ids = [0,1]
 model=torch.nn.DataParallel(model,device_ids=device_ids)
@@ -70,16 +80,20 @@ model=model.cuda(device_ids[0])
 # model_dict=torch.load('../pretrain_models/deepPruner_raw_pretrain_63.tar')
 # deeppruner
 # model_dict=torch.load('../pretrain_models/deepPruner_raw_pretrain_62.tar')
-model_dict=torch.load('../sceneFlowTrainedModel/deepPruner_raw_pretrain_61.tar')
+model_dict=torch.load('../pretrain_models/deepPruner_raw_pretrain_62.tar')
 model.load_state_dict(model_dict['state_dict'])
 
 # 测试Sceneflow
 dataloader=SceneflowDataLoader('../preprocess/Sceneflow_valid.csv',False)
-dataloader=DataLoader(dataloader,batch_size=1,shuffle=False,num_workers=20)
+dataloader=DataLoader(dataloader,batch_size=1,shuffle=False,num_workers=10)
 # 测试kitti
 # dataloader=ImageDataSet('/home/jiaxi/workspace/deepPruner/annotation_valid.csv','/home/jiaxi/workspace/KITTI/training')
 # dataloader=torch.utils.data.DataLoader(dataloader,batch_size=1*4,shuffle=False,num_workers=4,drop_last=False)
-
+jet=plt.cm.get_cmap('jet')
+def my_cmap(cmap):
+    colors = cmap(np.arange(cmap.N))
+    colors[255]=[1,1,1,1]
+    return mcolors.LinearSegmentedColormap.from_list("", colors)
 def validation_error_evaluate(gt,pred,mask):
     correct=((torch.abs(gt[mask]-pred[mask])<3)).float()
     correct=torch.sum(correct)
@@ -124,32 +138,41 @@ def test(imgL,imgR,disp_L,batch_idx,left_img,right_img):
         error_rate=validation_error_evaluate(disp_true,results[0],mask)
         loss=end_point_error(disp_true,results[0],mask)
         # 可视化
-        if loss>2:
-            refinedmaps=results[0]
-            print(refinedmaps.shape)
+        if loss>0:
+            print("loss>2")
             # with open('badcases/paths.txt','a+') as fp:
-            for i in range(refinedmaps.shape[0]):
+            for i in range(3):
                 # fp.write('batch_id:%d i:%d '%(batch_idx,i))
                 # fp.write(right_path[i]+' ')
                 # fp.write(right_path[i]+' \n')
-                left=Image.fromarray(np.uint8(np.array(left_img[i][:][:][:])))
-                right=Image.fromarray(np.uint8(np.array(right_img[i][:][:][:])))
-                left.save('badcases/%d_%d_left.png'%(batch_idx,i))
-                right.save('badcases/%d_%d_right.png'%(batch_idx,i))
-                refinedmap=np.array(refinedmaps[i][0][:][:].cpu())
-                gt=np.array(disp_L[i][0][:][:].cpu())
-                dif=refinedmap-gt
-                plt.imsave('badcases/%d_%d_pred(1)_loss_%.2f.png' %(batch_idx,i,loss),refinedmap,cmap='jet',vmin=0,vmax=192)
-                plt.imsave('badcases/%d_%d_gt.png' %(batch_idx,i),gt,cmap='jet',vmin=0,vmax=192)
-                plt.imsave('badcases/%d_%d_dif(1)_loss_%.2f.png' %(batch_idx,i,loss),dif,cmap='jet',vmin=-192,vmax=192)
-                # plt.imsave('badcases/%d_%d_pred(TransPruner1.0).png' %(batch_idx,i),refinedmap,cmap='jet')
-                # plt.imsave('badcases/%d_%d_gt(TransPruner1.0).png' %(batch_idx,i),gt,cmap='jet')
-                # plt.imsave('badcases/%d_%d_dif(TransPruner1.0).png' %(batch_idx,i),dif,cmap='jet')
+                refinedmaps=results[i]
+                left=Image.fromarray(np.uint8(np.array(left_img[0][:][:][:])))
+                right=Image.fromarray(np.uint8(np.array(right_img[0][:][:][:])))
+                refinedmap=np.array(refinedmaps[0][0][:][:].cpu())
+                if i ==0:
+                    gt=np.array(disp_L[0][0][:][:].cpu())
+                    dif=refinedmap-gt
+                    left.save('badcases/%d_left.png'%(batch_idx))
+                    right.save('badcases/%d_right.png'%(batch_idx))
+                    plt.imsave('badcases/%d_gt.png' %(batch_idx),gt,cmap=my_cmap(jet),vmin=0,vmax=192)
+                    plt.imsave('badcases/%d_dif_loss_%.2f.png' %(batch_idx,loss),dif,cmap=my_cmap(jet),vmin=-192,vmax=192)
+                plt.imsave('badcases/%d_prediction_refine%d_loss_%.2f.png' %(batch_idx,2-i,loss),refinedmap,cmap=my_cmap(jet),vmin=0,vmax=192)
+
+            diff1_0=np.array((results[1]-results[2])[0][0][:][:].cpu())
+            plt.imsave("badcases/%d_refine1_0_dif_mean%.3f.png"%(batch_idx,float(np.mean(np.abs(diff1_0)))),diff1_0,cmap=my_cmap(jet),vmin=-20,vmax=20)
+            diff2_1=np.array((results[0]-results[1])[0][0][:][:].cpu())
+            plt.imsave("badcases/%d_refine2_1_dif_mean%.3f.png"%(batch_idx,float(np.mean(np.abs(diff2_1)))),diff2_1,cmap=my_cmap(jet),vmin=-20,vmax=20)
+            # diff3_2=np.array((results[0]-results[1])[0][0][:][:].cpu())
+            # plt.imsave("badcases/%d_refine3_2_dif_mean%.3f.png"%(batch_idx,float(np.mean(np.abs(diff3_2)))),diff3_2,cmap=my_cmap(jet),vmin=-20,vmax=20)
+
+
         return error_rate.cpu().item(),loss.item()
 
 def main():
     totalloss=0
     for batch_idx,(left,right,disp,left_img,right_img) in enumerate(dataloader):
+        if batch_idx!=267:
+            continue
         print("batch_idx %d :"%(batch_idx))
         error_rate,loss=test(left,right,disp,batch_idx,left_img,right_img)
         totalloss+=loss

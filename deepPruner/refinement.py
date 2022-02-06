@@ -9,26 +9,6 @@ from einops import rearrange
 class refinement2(SubModule):
     def __init__(self,inplanes):
         super(refinement2, self).__init__()
-        # --------conv---------
-        # self.conv1 = nn.Sequential(
-        #     conv_bn_lrelu(inplanes, 32, 3, stride=1, pad=1),
-        #     conv_bn_lrelu(32, 32, 3, stride=1, pad=1, dilation=1),
-        #     conv_bn_lrelu(32, 32, 3, stride=1, pad=1, dilation=1),
-        #     conv_bn_lrelu(32, 16, 3, stride=1, pad=2, dilation=2),
-        #     conv_bn_lrelu(16, 16, 3, stride=1, pad=4, dilation=4),
-        #     conv_bn_lrelu(16, 16, 3, stride=1, pad=1, dilation=1))
-        # self.classif1 = nn.Conv2d(16, 1, kernel_size=3, padding=1, stride=1, bias=False)
-        # self.relu = nn.ReLU(inplace=True)
-        # self.weight_init()
-
-        # ---------vision transformer---------
-        # self.encoder=TransEncoder(config.transformer_layer_num,config.patchsize,inplanes,config.trans_vec_dim
-        #                           ,head_num=8)
-        # self.mlp=nn.Conv1d(config.trans_vec_dim,1*config.patchsize*config.patchsize,1)
-        # self.relu = nn.ReLU(inplace=True)
-        # self.weight_init()
-
-        # --------swinTransformer 1.0---------
         self.swinT=swinTransformer(1,
                                    [2],
                                    config.patchsize,
@@ -67,7 +47,7 @@ class refinement2(SubModule):
         out1=self.swinT(input,H,W)
         out2=self.classif1(out1)
         output=self.relu(out2+disparity)
-        return out1,output
+        return output
 
 class refinement1(SubModule):
     def __init__(self,inplanes):
@@ -85,12 +65,12 @@ class refinement1(SubModule):
         self.relu = nn.ReLU(inplace=True)
         self.weight_init()
 
-    def forward(self, input, disparity):
+    def forward(self, input):
         N,C,H,W=input.shape
         out1=self.swinT(input,H,W)
-        out2=self.classif1(out1)
-        output=self.relu(out2+disparity)
-        return out1,output
+        # out2=self.classif1(out1)
+        # output=self.relu(out2+disparity)
+        return out1
 
 class refinement3(SubModule):
     def __init__(self,inplanes):
@@ -98,10 +78,10 @@ class refinement3(SubModule):
         self.inplanes=inplanes
         self.swinT=swinTransformer(1,
                                    [1],  # transformer_layer_num
-                                   2,
-                                   inplanes,
+                                   patch_size=2,
+                                   in_channels=inplanes,
                                    vec_dims=16,
-                                   head_dims=16,
+                                   head_dims=4,
                                    window_size=4)
         self.classif1 = nn.Conv2d(16//(2**2), 1, kernel_size=3, padding=1, stride=1, bias=False)
         self.relu = nn.ReLU(inplace=True)

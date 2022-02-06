@@ -10,11 +10,17 @@ import random
 # test_path='/home/FastDataLoader/flying3d/test'
 # 3090上地址
 import torch
+# 3090
+# monkey_path='/data/sceneflow/monkaa/frames_cleanpass'
+# driving_path='/data/sceneflow/driving/frames_cleanpass/15mm_focallength'  # 选用15mm因为更适合在kitti上finetune
+# flying3d_path='/data/sceneflow/flying3d/frames_cleanpass/TRAIN'
+# test_path='/data/sceneflow/flying3d/frames_cleanpass/TEST'
 
-monkey_path='/data/sceneflow/monkaa/frames_cleanpass'
-driving_path='/data/sceneflow/driving/frames_cleanpass/15mm_focallength'  # 选用15mm因为更适合在kitti上finetune
-flying3d_path='/data/sceneflow/flying3d/frames_cleanpass/TRAIN'
-test_path='/data/sceneflow/flying3d/frames_cleanpass/TEST'
+# 原四卡
+monkey_path='/home/FastDataLoader/sceneflow/monkaa/frames_cleanpass'
+driving_path='/home/FastDataLoader/sceneflow/driving/frames_cleanpass/15mm_focallength'  # 选用15mm因为更适合在kitti上finetune
+flying3d_path='/home/FastDataLoader/sceneflow/flying3d/frames_cleanpass/TRAIN'
+test_path='/home/FastDataLoader/sceneflow/flying3d/frames_cleanpass/TEST'
 
 def resolve(path):
     left_list=[]
@@ -46,7 +52,7 @@ df1=pandas.DataFrame({'left':train_left,'right':train_right,'disp':train_disp})
 df1.to_csv('Sceneflow_train.csv')
 df2=pandas.DataFrame({'left':test_left,'right':test_right,'disp':test_disp})
 df2.to_csv('Sceneflow_valid.csv')
-
+print("ok")
 
 torch.tensor([])
 
